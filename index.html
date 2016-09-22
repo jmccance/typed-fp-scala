@@ -355,9 +355,9 @@ sealed trait InvalidEmailAddressError
 case object MissingAtSign extends InvalidEmailAddressError
 case object NoUsername extends InvalidEmailAddressError
 
-def from(s: String): Either[InvalidEmailError, EmailAddress]
+def from(s: String): Either[InvalidEmailAddressError, EmailAddress]
 
-val errorOrUpdated: Either[InvalidEmailError, Contact] =
+val errorOrUpdated: Either[InvalidEmailAddressError, Contact] =
   EmailAddress
     .from("wsmith6079@minitrue.gov.oc")
     .map(e => withEmail(winston, e)
@@ -407,7 +407,7 @@ def emailAddressDomain[A](fContact: F[A]): F[String]
 
             <pre><code data-trim class="scala">
 trait Functor[F[_]] {
-  def map[B](fa: F[A])(f: A => B): F[B]
+  def map[A, B](fa: F[A])(f: A => B): F[B]
 }
             </code></pre>
           </section>
