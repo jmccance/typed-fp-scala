@@ -1,0 +1,528 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>FP Grand Tour: Scala</title>
+    <meta name="description" content="An introduction to using types in functional programming with Scala.">
+    <meta name="author" content="Joel McCance">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/black.css">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+var link = document.createElement( 'link' );
+link.rel = 'stylesheet';
+link.type = 'text/css';
+link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>FP Grand Tour</h1>
+          <h2>Functional Types</h2>
+
+          <div>
+            <small><a href="https://twitter.com/jmccance">@jmccance</a></small>
+          </div>
+
+          <aside class="notes">
+            Continuation of the Grand Tour. It's been awhile, so let's review some of what we learned earlier this year.
+          </aside>
+        </section>
+
+        <section>
+          <section>
+            <h1>Review</h1>
+          </section>
+
+          <section>
+            <h2>Immutability</h2>
+
+            <ul>
+              <li>Names can only be bound once in a given scope.</li>
+              <li>Data doesn't change.</li>
+            </ul>
+
+            <aside class="notes">
+              <p>Immutability lets us treat data as values, like sets or numbers in math, instead of as mutable records.</p>
+
+              <p>You can actually think of referential transparency as another form of immutability. The symbol `f(x)` should always refer to the same thing, just as `x` should always refer to the same thing.</p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Pure Functions</h2>
+
+            <p>Make functions more like they are in math.</p>
+
+            <ul>
+              <li>No side-effects</li>
+              <li>Same inputs &rArr; Same outputs</li>
+            </ul>
+
+            <aside class="notes">
+              Second point also known as "referential transparency". Both of these are about trying to make functions in programming behave more like functions in math.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Freedom Is Slavery</h2>
+
+            <img style="border: 0px; background-color: rgba(0, 0, 0, 0); width: 50%; box-shadow: none;" src="lib/images/ingsoc.png" alt="INGSOC Logo"/>
+
+            <h2>Slavery Is Freedom</h2>
+
+            <aside class="notes">
+              <p>Theme for all of these is "restriction". FP principles tell you things not to do. Seems counter-intuitive. Compare to transition from assembly to high-level languages. From C to garbage-collected languages. Sure we can't be super clever with our memory management anymore, but we don't need to be. And now we can be super clever about the stuff that actually matters to the products we're building.</p>
+              
+              <p>Types add more restrictions. But what I'm hope to show you here is that those restrictions actually free us up to make cool stuff.</p>
+            </aside>
+          </section>
+        </section>
+
+
+
+        <section>
+          <section>
+            <h1>Domains &amp; Codomains</h1>
+
+            <aside class="notes">
+              Let's start with the simplest thing that types can do. Let's say our application includes an address book with contacts, and we want a function that will update a contact with a new email address.
+            </aside>
+          </section>
+
+          <section>
+            <pre><code data-trim class="javascript">
+            function withEmail() { /* ... */ };
+            </code></pre>
+
+            <aside class="notes">
+              What do we know about this function? How many arguments does it take? What does it return?
+            </aside>
+          </section>
+
+          <section>
+            <pre><code data-trim class="javscript">
+function withEmail(contact, email) { /* ... */ };
+            </code></pre>
+
+            <aside class="notes">
+              Now we know it takes two arguments, and can guess what they are from the names. If we know we're using FP principles, that makes things better. We'll know this doesn't do anything weird on the side, and that it will always return the same result for the same inputs. But we still don't know anything about their structure, or about the function's return type.
+            </aside>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+def withEmail(contact: Any, email: Any): Any = /* ... */ 
+            </code></pre>
+
+            <aside class="notes">
+              So this is the same function rewritten in Scala. Any means literally any type, including primitives. Let's add some types to restrict the results. This is hard for both the user and the implementer. User has to go read documentation or implementation or tests. Implementer has to handle invalid types, write detailed documentation of formats, maintain that documentation across other functions that use the same formats, etc.
+            </aside>
+          </section>
+
+          <section>
+            <h2>Case Classes</h2>
+
+            <pre><code data-trim class="scala">
+case class Contact(name: String, emailAddress: String)
+
+Contact("Winston Smith", "wsmith6079@minitrue.gov.oc")
+            </code></pre>
+
+            <ul>
+              <li>Immutable</li>
+              <li>Sane implementations of toString, equality, hash code</li>
+              <li>Support for pattern matching</li>
+              <li>Values for our functions</li>
+            </ul>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+def withEmail(contact: Contact,
+              email: String): Contact = /* ... */
+            </code></pre>
+
+            <aside class="notes">
+              Now we've restricted the domain and codomain of our function. We know what we can pass it, and we know what we're getting out. This makes it easier on the reader, because they don't need to go to the documentation as much, and it makes it easier on the implementer because they know the types of arguments they can expect.
+
+              <p>But wait... how do we know that's a valid email address?</p>
+            </aside>
+          </section>
+
+          <section>
+
+            <pre><code data-trim class="scala">
+case class Name(value: String)
+case class EmailAddress(value: String)
+
+case class Contact(name: Name, emailAddress: EmailAddress)
+
+Contact(
+  Name("Winston Smith"),
+  EmailAddress("wsmith6079@minitrue.gov.oc")
+)
+            </code></pre>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+def withEmail(contact: Contact,
+              email: EmailAddress): Contact = /* ... */
+            </code></pre>
+
+            <aside class="notes">
+              <p>Now we know a lot more about the structure. Since it's so easy to create case classes, we can rigorously define all our types. Now much less likely to accidentally pass a non-email String into withEmail. By restricting what we can do in the function, we actually make it easier to work use and easier to implement.</p>
+            </aside>
+          </section>
+        </section>
+
+
+
+        <section>
+          <section>
+            <pre><code data-trim class="scala">
+case class EmailAddress private (value: String)
+
+object EmailAddress {
+  def from(s: String): EmailAddress = /* ... */
+}
+            </code></pre>
+
+            <h3>What's wrong with this picture?</h3>
+
+            <aside class="notes">
+              <p>Explain private modifier, companion objects. So what happens if the email address is invalid? Throw an exception? But then our function has a side-effect: it throws exceptions, triggering a jump in execution. So we want to return a value. What do we return? Null? Nulls are bad. Nulls are so bad, we'd rather write all of our code to never, ever use them. So what type can we return instead?</p>
+            </aside>
+          </section>
+
+          <section>
+            <h1>Functional Error Handling</h1>
+          </section>
+
+          <section>
+            <h2>Building a Better Null</h2>
+
+            <pre><code data-trim class="scala">
+sealed trait Option[+A]
+
+final case class Some[A](value: A) extends Option[A]
+case object None extends Option[Nothing]
+            </code></pre>
+
+            <aside class="notes">
+              <p>Explain sealed. Explaining Nothing. Explain case object.</p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Algebraic Data Types</h2>
+
+            <p>Option[A] = Some[A] + None</p>
+            <p>Some[A] = A</p>
+
+            <aside class="notes">
+              <p>Algebraic types are built by "adding" and "multiplying" types. Option is a "sum" type, combining Some and None. Some is a product, albeit a trivial one of one type. Using this pattern we can model our domain by building small types and composing them together. But how do we take advantage of this? Does Scala involve a bunch of instance-of checks?</p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Algebraic Data Types</h2>
+
+            <pre><code data-trim class="scala">
+def port(maybePort: Option[Int]): Int = maybePort match {
+  case Some(port) => port
+  case None => 8000
+}
+            </code></pre>
+
+            <aside class="notes">
+              <p>So this is pattern matching. Case classes and pattern matching are probably two of the easiest, most attractive features of Scala. Makes it trivial to flesh out your domain using types and then inspect those types to implement business logic. Because we declare the root type sealed, the compiler will verify these pattern matches to make sure that you're handling each case, so we don't lose safety. Data modeling in Scala encourages composing together small types, not complex object hierarchies. Again, the theme is to make our data into mathematical values that we map to other values, instead of forms that we edit and update.</p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Algebraic Data Types</h2>
+
+            <p>Contact = Name &times; EmailAddress</p>
+          </section>
+
+          <section>
+            <h2>Algebraic Data Types</h2>
+            
+            <pre><code data-trim class="scala">
+def prettyEmail(contact: Contact): String = contact match {
+  case Contact(name, EmailAddress(email)) => s"$name <$email>"
+}
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Building a Better Null</h2>
+
+            <pre><code data-trim class="scala">
+object EmailAddress {
+  def from(s: String): Option[EmailAddress] = /* ... */
+}
+
+val maybeEmail = EmailAddress.from("wsmith6079@minitrue.gov.oc")
+
+val maybeUpdated = maybeEmail match {
+  case Some(email) => Some(withEmail(winston, email))
+  case None => None
+}
+            </code></pre>
+            <aside class="notes">
+              <p>Explain pattern matching.</p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Building a Better Null Check</h2>
+
+            <pre><code data-trim class="scala">
+sealed trait Option[A] {
+  def map[B](f: A => B): Option[B] = this match {
+    case Some(a) => Some(f(a))
+    case None => None
+  }
+}
+
+val maybeUpdated: Option[Contact] =
+  EmailAddress
+    .from("wsmith6079@minitrue.gov.oc")
+    .map(e => withEmail(winston, e))
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Building a Better Try-Catch</h2>
+            <pre><code data-trim class="scala">
+sealed trait Try[A] {
+  def map[B](f: A => B): Try[B] = this match {
+    case Success(a) => Success(f(a))
+    case f: Failure => f
+  }
+}
+
+final case class Success[A](value: A) extends Try[A]
+final case class Failure[A](throwable: Throwable) extends Try[A]
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Building a Better Try-Catch</h2>
+
+            <pre><code data-trim class="scala">
+val tryContact: Try[Contact] =
+  EmailAddress
+    .from("wsmith6079@minitrue.gov.oc")
+    .map(e => withEmail(winston, e))
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Either/Or</h2>
+
+            <pre><code data-trim class="scala">
+sealed trait Either[+A, +B] {
+  def map[C](f: B => C): Either[A, C] = this match {
+    case Right(b) => Right(f(b))
+    case left: Left => left
+  }
+}
+
+case class Left[A](value: A) extends Either[A, Nothing]
+case class Right[B](value: B) extends Either[Nothing, B]
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>Either/Or</h2>
+
+            <pre><code data-trim class="scala">
+sealed trait InvalidEmailAddressError
+case object MissingAtSign extends InvalidEmailAddressError
+case object NoUsername extends InvalidEmailAddressError
+
+def from(s: String): Either[InvalidEmailError, EmailAddress]
+
+val errorOrUpdated: Either[InvalidEmailError, Contact] =
+  EmailAddress
+    .from("wsmith6079@minitrue.gov.oc")
+    .map(e => withEmail(winston, e)
+            </code></pre>
+          </section>
+        </section>
+
+
+
+        <section>
+          <section>
+            <pre><code data-trim class="scala">
+sealed trait Option[A] {
+  def map[B](f: A => B): Option[B] = /* ... */
+}
+
+sealed trait Try[A] {
+  def map[B](f: A => B): Try[B] = /* ... */
+}
+
+sealed trait Either[A, B] {
+  def map[C](f: B => C): Either[A, C] = /* ... */
+}
+            </code></pre>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+trait F[A] {
+  def map[B](f: A => B): F[B]
+}
+
+def emailAddressDomain[A](fContact: F[A]): F[String]
+            </code></pre>
+
+            <aside class="notes">
+              <p>So this is kind of what we want. We've identified an interface we expect things match, and we want to be able to write functions against the interface. Two problems. (1) What if we want to use this function with types that we don't control? (2) Making that type actually work and work safely makes it significantly more complicated.</p>
+            </aside>
+          </section>
+
+          <section>
+            <h1>Typeclasses</h1>
+          </section>
+
+          <section>
+            <h2>The F-Word</h2>
+
+            <pre><code data-trim class="scala">
+trait Functor[F[_]] {
+  def map[B](fa: F[A])(f: A => B): F[B]
+}
+            </code></pre>
+          </section>
+
+          <section>
+            <h2>The F-Word</h2>
+
+            <pre><code data-trim class="scala">
+implicit val optionFunctor: Functor[Option] = new Functor[Option] {
+  def map[A, B](oa: Option[A])(f: A => B): Option[B] = oa.map(f)
+}
+
+/* syntax-enabling magic omitted */
+
+def emailAddressDomain[F[_]: Functor](fc: F[Contact]): F[String] =
+  fc.map(/* calculate domain */)
+            </code></pre>
+
+            <aside class="notes">
+              <p>Think of whether we'd want to do this without our restrictions. What if map returned different values under different circumstances? What if it threw exceptions? How would we be able to abstract away like this?</p>
+            </aside>
+          </section>
+
+          <section>
+            <h2>Functor</h2>
+
+            <blockquote>"I can transform the contents with a function."</blockquote>
+
+            <p>Option, List, Future, Try, Either</p>
+          </section>
+
+          <section>
+            <h2>Semigroup</h2>
+
+            <blockquote>"I can 'add' them together."</blockquote>
+
+            <p>Int, Double, Option[A: Semigroup], List</p>
+          </section>
+
+          <section>
+            <h2>Monoid</h2>
+
+            <blockquote>"I can add them together, and I know there's an identity."</blockquote>
+
+            <p>Int, Double, List, Option[A: Semigroup], Future</p>
+          </section>
+
+          <section>
+            <h2>Monad</h2>
+
+            <blockquote>"I can chain computations on these together."</blockquote>
+
+            <p>Option, Future, List, Either</p>
+          </section>
+
+          <section>
+            <pre><code data-trim class="scala">
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
+
+implicit val contactReads: Reads[Contact] =
+  ((JsPath \ "name").read[Name]
+    and (JsPath \ "emailAddress").read[EmailAddress)(Contact(_, _))
+
+// Some typeclasses used: Reads, Functor, Applicative
+            </code></pre>
+
+            <aside class="notes">
+              <p>More complex example from a real library. Walk through the parts. Recursive structure. Collects all the errors at each stage, so if there's a problem with multiple fields the deserializer will report all of them.</p>
+            </aside>
+          </section>
+        </section>
+
+
+
+        <section>
+          <section>
+            <h2>Types in FP</h2>
+            <ul>
+              <li>Restrict domain and codomain of functions</li>
+              <li>Encode effects</li>
+              <li>Enable higher-level abstractions</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Freedom Is Constraining</h2>
+
+            <img style="border: 0px; background-color: rgba(0, 0, 0, 0); width: 50%; box-shadow: none;" src="lib/images/ingsoc.png" alt="INGSOC Logo"/>
+
+            <h2>Constraint Is Freedom</h2>
+            
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+// More info https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+  history: true,
+
+  // More info https://github.com/hakimel/reveal.js#dependencies
+  dependencies: [
+  { src: 'plugin/markdown/marked.js' },
+  { src: 'plugin/markdown/markdown.js' },
+  { src: 'plugin/notes/notes.js', async: true },
+  { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+  { src: 'socket.io/socket.io.js', async: true},
+  { src: 'plugin/notes-server/client.js', async: true }
+  ]
+});
+    </script>
+  </body>
+</html>
